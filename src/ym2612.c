@@ -6,6 +6,15 @@
 #include "vdp.h"
 #include "z80_ctrl.h"
 
+void _sound_getBus()
+{
+    u16 bus_taken;
+    bus_taken = Z80_isBusTaken();
+    if(!bus_taken)
+    {
+        Z80_requestBus(TRUE);
+    }
+}
 
 void YM2612_reset()
 {
@@ -63,12 +72,20 @@ void YM2612_write(const u16 port, const u8 data)
 {
     vs8 *pb;
 
+    u16 bus_taken;
+    bus_taken = Z80_isBusTaken();
+    if (!bus_taken)
+        Z80_requestBus(TRUE);
+    
     pb = (s8*) YM2612_BASEPORT;
 
     // wait while YM2612 busy
     while (*pb < 0);
     // write data
     pb[port & 3] = data;
+    
+    if (!bus_taken)
+        Z80_releaseBus();
 }
 
 void YM2612_writeSafe(const u16 port, const u8 data)
@@ -80,6 +97,11 @@ void YM2612_writeReg(const u16 part, const u8 reg, const u8 data)
 {
     vs8 *pb;
     u16 port;
+   
+    u16 bus_taken;
+    bus_taken = Z80_isBusTaken();
+    if (!bus_taken)
+        Z80_requestBus(TRUE);
 
     pb = (s8*) YM2612_BASEPORT;
     port = (part << 1) & 2;
@@ -100,6 +122,9 @@ void YM2612_writeReg(const u16 part, const u8 reg, const u8 data)
     while (*pb < 0);
     // set data
     pb[port + 1] = data;
+
+    if (!bus_taken)
+        Z80_releaseBus();
 }
 
 void YM2612_writeRegSafe(const u16 part, const u8 reg, const u8 data)

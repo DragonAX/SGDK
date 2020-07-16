@@ -191,38 +191,38 @@ STACK       EQU     JUMP_TABLE      ; stack pointer above buffer region ($1600 -
 
             macro handlePCMCommandXGM ch
 
-            LD      HL, PCM_PRIO+(ch*8)     ; HL point on PCM info      ' 10    |
-            LD      A, C                    ; A = new prio              ' 4     |
-            CP      (HL)                    ; compare new and old prio  ' 7     | (31)
-            JP      NC, .play_new           ; >= old prio --> play new  ' 10    |
-
-            INC     E                       ; next XGM command          ' 4     |
-            wait97                          ; sync                      ' 97    | 111 (142)
-            JP      .end                    ; done                      ' 10    |
-
-.play_new
-            LD      A, (DE)                 ; A = PCM id (max = $3F)    ' 7     |
-            INC     E                       ; next XGM command          ' 4     |
-            OR      A                       ; not a stop PCM command ?  ' 4     | 27 (58)
-            JR      NZ, .PCM_play           ; go set new prio           ' 7/12  |
-
-            LD      C, 0                    ; reset prio for stop       ' 7     | +2
-
-.PCM_play
-            LD      (HL), C                 ; set new prio              ' 7     | (65)
-
-            LD      H, (ID_TABLE>>8)        ;                           ' 7     |
-            ADD     A                       ;                           ' 4     |
-            ADD     A                       ;                           ' 4     | 25 (90)
-            LD      L, A                    ; HL point on new PCM addr  ' 4     |
-            LD      SP, HL                  ; set SP to new PCM addr    ' 6     |
-
-            POP     HL                      ; copy params               ' 10    |
-            LD      (PCM_ADDR+(ch*8)),HL    ;                           ' 16    |
-            POP     HL                      ;                           ' 10    | 52 (142)
-            LD      (PCM_LEN+(ch*8)),HL     ;                           ' 16    |
-
-.end                                        ;                           ' 142
+;            LD      HL, PCM_PRIO+(ch*8)     ; HL point on PCM info      ' 10    |
+;            LD      A, C                    ; A = new prio              ' 4     |
+;            CP      (HL)                    ; compare new and old prio  ' 7     | (31)
+;            JP      NC, .play_new           ; >= old prio --> play new  ' 10    |
+;
+;            INC     E                       ; next XGM command          ' 4     |
+;            wait97                          ; sync                      ' 97    | 111 (142)
+;            JP      .end                    ; done                      ' 10    |
+;
+;.play_new
+;            LD      A, (DE)                 ; A = PCM id (max = $3F)    ' 7     |
+;            INC     E                       ; next XGM command          ' 4     |
+;            OR      A                       ; not a stop PCM command ?  ' 4     | 27 (58)
+;            JR      NZ, .PCM_play           ; go set new prio           ' 7/12  |
+;
+;            LD      C, 0                    ; reset prio for stop       ' 7     | +2
+;
+;.PCM_play
+;            LD      (HL), C                 ; set new prio              ' 7     | (65)
+;
+;            LD      H, (ID_TABLE>>8)        ;                           ' 7     |
+;            ADD     A                       ;                           ' 4     |
+;            ADD     A                       ;                           ' 4     | 25 (90)
+;            LD      L, A                    ; HL point on new PCM addr  ' 4     |
+;            LD      SP, HL                  ; set SP to new PCM addr    ' 6     |
+;
+;            POP     HL                      ; copy params               ' 10    |
+;            LD      (PCM_ADDR+(ch*8)),HL    ;                           ' 16    |
+;            POP     HL                      ;                           ' 10    | 52 (142)
+;            LD      (PCM_LEN+(ch*8)),HL     ;                           ' 16    |
+;
+;.end                                        ;                           ' 142
 
             endm
 
@@ -543,12 +543,17 @@ STACK       EQU     JUMP_TABLE      ; stack pointer above buffer region ($1600 -
             macro sampleOutput
 
             EXX                     ;                           ' 4     | 4
-
             LD      A, (BC)         ; read sample from buffer   ' 7     |
             INC     BC              ; increment read address    ' 6     |
             RES     2, B            ; read_address &= 0x03FF    ' 8     | 28 (32)
+            LD      HL, DRAGON      ; 7
+            BIT     1, (HL)         ; 
+            JP      NZ, .skipSample ;
             LD      (DE), A         ; play sample               ' 7     |
-
+            JP      .playedSample
+.skipSample
+            wait104
+.playedSample
             EXX                     ;                           ' 4     | (36)
 
             endm
@@ -603,13 +608,13 @@ STACK       EQU     JUMP_TABLE      ; stack pointer above buffer region ($1600 -
 
             macro waitYMReady
 
-            EXX                     ;                           ' 4     | (4)
-
-.wait
-            BIT     7, (HL)         ; test YM ready bit         ' 12    | (22)
-            JP      NZ, .wait       ; wait while busy           ' 10    |
-
-            EXX                     ;                           ' 4     | (30)
+;            EXX                     ;                           ' 4     | (4)
+;
+;.wait
+;            BIT     7, (HL)         ; test YM ready bit         ' 12    | (22)
+;            JP      NZ, .wait       ; wait while busy           ' 10    |
+;
+;            EXX                     ;                           ' 4     | (30)
 
             endm
 
@@ -1454,17 +1459,17 @@ psg_env_write1
             LD      (BC), A             ; write to save         ' 7     |
 
 psg_env_write0
-            LD      A, (DE)             ; A = PSG data          ' 7     |
-            RLCA                        ;                       ' 4     |
-            RLCA                        ;                       ' 4     |
-            RLCA                        ;                       ' 4     |
-            AND     $3                  ; A = channel number    ' 7     |
-            ADD    (PSG_ENV_SAV & $FF)  ; add offset            ' 7     | 62 (244)
-            LD      C, A                ; BC point on save      ' 4     |
-            LD      A, (DE)             ; A = PSG data          ' 7     |
-            INC     E                   ; next data             ' 4     |
-            LD      (HL), A             ; write to PSG          ' 7     |
-            LD      (BC), A             ; write to save         ' 7     |
+;            LD      A, (DE)             ; A = PSG data          ' 7     |
+;            RLCA                        ;                       ' 4     |
+;            RLCA                        ;                       ' 4     |
+;            RLCA                        ;                       ' 4     |
+;            AND     $3                  ; A = channel number    ' 7     |
+;            ADD    (PSG_ENV_SAV & $FF)  ; add offset            ' 7     | 62 (244)
+;            LD      C, A                ; BC point on save      ' 4     |
+;            LD      A, (DE)             ; A = PSG data          ' 7     |
+;            INC     E                   ; next data             ' 4     |
+;            LD      (HL), A             ; write to PSG          ' 7     |
+;            LD      (BC), A             ; write to save         ' 7     |
 
             JP      execute_xgm         ;                       ' 10    | (254)
 
@@ -2955,21 +2960,21 @@ loadYMState                             ;                           ' 56
 
 loadPSGState
 
-            LD      A, (DE)             ; get saved value           ' 7     |
-            INC     E                   ; next                      ' 4     | (21)
-            LD      (HL), A             ; PSG restore channel 0 env ' 10    |
-
-            LD      A, (DE)             ; get saved value           ' 7     |
-            INC     E                   ; next                      ' 4     | 21 (42)
-            LD      (HL), A             ; PSG restore channel 1 env ' 10    |
-
-            LD      A, (DE)             ; get saved value           ' 7     |
-            INC     E                   ; next                      ' 4     | 21 (63)
-            LD      (HL), A             ; PSG restore channel 2 env ' 10    |
-
-            LD      A, (DE)             ; get saved value           ' 7     |
-            INC     E                   ; next                      ' 4     | 21 (84)
-            LD      (HL), A             ; PSG restore channel 3 env ' 10    |
+;            LD      A, (DE)             ; get saved value           ' 7     |
+;            INC     E                   ; next                      ' 4     | (21)
+;            LD      (HL), A             ; PSG restore channel 0 env ' 10    |
+;
+;            LD      A, (DE)             ; get saved value           ' 7     |
+;            INC     E                   ; next                      ' 4     | 21 (42)
+;            LD      (HL), A             ; PSG restore channel 1 env ' 10    |
+;
+;            LD      A, (DE)             ; get saved value           ' 7     |
+;            INC     E                   ; next                      ' 4     | 21 (63)
+;            LD      (HL), A             ; PSG restore channel 2 env ' 10    |
+;
+;            LD      A, (DE)             ; get saved value           ' 7     |
+;            INC     E                   ; next                      ' 4     | 21 (84)
+;            LD      (HL), A             ; PSG restore channel 3 env ' 10    |
 
             RET                         ; done                      ' 10    | (94)
 

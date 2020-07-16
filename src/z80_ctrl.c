@@ -73,11 +73,17 @@ void Z80_requestBus(u16 wait)
     {
         // wait for bus taken
         while (*pw_bus & 0x0100);
+	Z80_write(Z80_DRV_DRAGON,0x01);
+	u8 x = Z80_read(Z80_DRV_DRAGON+2);
+	Z80_write(Z80_DRV_DRAGON+2,x+1);
     }
 }
-
 void Z80_releaseBus()
 {
+    if (Z80_isBusTaken())
+    {
+	Z80_write(Z80_DRV_DRAGON,0x10);	
+    }
     vu16 *pw;
 
     pw = (u16 *) Z80_HALT_PORT;

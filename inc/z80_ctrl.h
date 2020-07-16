@@ -74,7 +74,7 @@
  * Z80 default driver parameters address.
  */
 #define Z80_DRV_PARAMS                  0xA00104
-
+#define Z80_DRV_DRAGON                  0x001D0
 // default command and status value
 #define Z80_DRV_COM_PLAY_SFT            0
 #define Z80_DRV_COM_STOP_SFT            4

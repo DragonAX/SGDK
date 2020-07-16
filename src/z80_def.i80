@@ -39,3 +39,4 @@ CH3         EQU     1<<CH3_SFT
 COMMAND     EQU     $0100           ; command from 68K
 STATUS      EQU     $0102           ; status from Z80
 PARAMS      EQU     $0104           ; parameters (68K and Z80)
+DRAGON      EQU     $01D0
